@@ -6,7 +6,7 @@ import 'package:camera/camera.dart';
 import 'home_screen.dart'; // <--- Thêm dòng này
 import 'camera_screen.dart'; 
 import 'login_screen.dart';
-
+import 'main_layout.dart';
 // --- BIẾN CAMERA TOÀN CỤC ---
 List<CameraDescription> cameras = [];
 
@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
           if (snapshot.hasData) {
-        return const HomeScreen(); // <--- Đổi từ CameraScreen thành HomeScreen
+        return const MainLayout(); // <--- Đổi từ CameraScreen thành HomeScreen
       }
       return const LoginScreen(); 
         },
