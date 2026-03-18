@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart'; // <--- Thư viện để chuột kéo được
+import 'package:flutter/gestures.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:camera/camera.dart';
 import 'login_screen.dart';
 import 'main_layout.dart';
+import 'theme.dart';
 // --- BIẾN CAMERA TOÀN CỤC ---
 List<CameraDescription> cameras = [];
 
@@ -57,24 +58,23 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Locket Clone',
       
-      // --- KÍCH HOẠT KÉO CHUỘT ---
       scrollBehavior: MyCustomScrollBehavior(), 
       
-      theme: ThemeData(
-        brightness: Brightness.dark, 
-        primarySwatch: Colors.amber,
-        scaffoldBackgroundColor: Colors.black,
-      ),
+      theme: getAppTheme(),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Colors.amber),
+              ),
+            );
           }
           if (snapshot.hasData) {
-        return const MainLayout(); // <--- Đổi từ CameraScreen thành HomeScreen
-      }
-      return const LoginScreen(); 
+            return const MainLayout();
+          }
+          return const LoginScreen(); 
         },
       ),
     );
