@@ -8,6 +8,7 @@ import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'chat_list_screen.dart';
 import 'ui_components.dart';
+import 'app_utils.dart';
 
 class FeedScreen extends StatefulWidget {
   final String? initialPostId;
@@ -331,6 +332,7 @@ class _FeedPostItemState extends State<FeedPostItem> {
     }
     String chatId = myUid.compareTo(authorUid) < 0 ? "${myUid}_$authorUid" : "${authorUid}_$myUid";
     try {
+      final appContext = context;
       await FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').add({
         'senderId': myUid, 'text': text, 'replyToImage': data['imageUrl'], 'timestamp': FieldValue.serverTimestamp(),
       });
@@ -338,9 +340,12 @@ class _FeedPostItemState extends State<FeedPostItem> {
         'lastMessage': "Đã phản hồi ảnh: $text", 'lastTime': FieldValue.serverTimestamp(), 'users': [myUid, authorUid]
       }, SetOptions(merge: true));
       _replyController.clear();
-      FocusScope.of(context).unfocus(); 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã gửi tin nhắn!")));
-    } catch (e) { debugPrint("Lỗi: $e"); } 
+      FocusScope.of(appContext).unfocus(); 
+      await SafeContext.showSnackBar(appContext, "Đã gửi tin nhắn!");
+    } catch (e) { 
+      debugPrint("Lỗi: $e");
+      await SafeContext.showErrorSnackBar(context, "Lỗi: $e");
+    } 
     finally { if (mounted) setState(() => _isSending = false); }
   }
 
