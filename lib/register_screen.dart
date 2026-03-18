@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'modern_ui.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -51,66 +52,107 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Nền đen cho khác biệt chút
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.amber),
-          onPressed: () => Navigator.pop(context), // Quay lại đăng nhập
-        ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            children: [
-              const Text("TẠO TÀI KHOẢN", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.amber)),
-              const SizedBox(height: 10),
-              const Text("Tham gia mạng xã hội Locket", style: TextStyle(color: Colors.white70)),
-              
-              const SizedBox(height: 40),
-
-              TextField(
-                controller: _emailController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  labelStyle: TextStyle(color: Colors.amber),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.amber)),
-                  prefixIcon: Icon(Icons.email, color: Colors.white),
+      backgroundColor: Colors.black,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Modern Header with back button
+            Stack(
+              children: [
+                ModernHeader(
+                  title: "Tạo tài khoản mới",
+                  subtitle: "Tham gia mạng xã hội Locket ngay",
+                  icon: Icons.person_add_alt_1_rounded,
                 ),
-              ),
-              const SizedBox(height: 15),
-
-              TextField(
-                controller: _passwordController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: "Mật khẩu",
-                  labelStyle: TextStyle(color: Colors.amber),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white54)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.amber)),
-                  prefixIcon: Icon(Icons.lock, color: Colors.white),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 30),
-
-              _isLoading 
-              ? const CircularProgressIndicator(color: Colors.amber)
-              : SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
-                    onPressed: _register,
-                    child: const Text("ĐĂNG KÝ NGAY", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.grey[900],
+                      border: Border.all(color: Colors.amber, width: 1.5),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.amber),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ),
                 ),
-            ],
-          ),
+              ],
+            ),
+            
+            // Register Form
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  
+                  // Email Input
+                  ModernTextField(
+                    label: "Email",
+                    hintText: "Nhập email của bạn",
+                    controller: _emailController,
+                    icon: Icons.email_rounded,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Password Input
+                  ModernTextField(
+                    label: "Mật khẩu",
+                    hintText: "Tối thiểu 6 ký tự",
+                    controller: _passwordController,
+                    icon: Icons.lock_rounded,
+                    isPassword: true,
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Register Button
+                  ModernGradientButton(
+                    label: _isLoading ? "Đang tạo tài khoản..." : "ĐĂNG KÝ",
+                    onPressed: _isLoading ? () {} : _register,
+                    isLoading: _isLoading,
+                  ),
+                  
+                  // Divider
+                  ModernDivider(text: "hoặc"),
+                  
+                  // Login Link
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white54, width: 1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.login_rounded, color: Colors.white70),
+                          const SizedBox(width: 12),
+                          Text(
+                            "QUAY LẠI ĐĂNG NHẬP",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
