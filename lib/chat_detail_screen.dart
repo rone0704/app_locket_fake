@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'ui_button_tokens.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String friendUid;
@@ -55,7 +56,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () => Navigator.pop(context)),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: TokenIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            size: 38,
+            onTap: () => Navigator.pop(context),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -141,9 +149,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  GestureDetector(
+                  PressableScale(
                     onTap: _sendMessage,
-                    child: Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.amber), child: const Icon(Icons.send, color: Colors.black, size: 20)),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.amber,
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.send,
+                        color: Colors.black,
+                        size: 20,
+                      ),
+                    ),
                   )
                 ],
               ),

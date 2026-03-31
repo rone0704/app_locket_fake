@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ==========================================
 // APP THEME & STYLES
@@ -178,30 +179,142 @@ class AppTheme {
 // THEME DATA
 // ==========================================
 
-ThemeData getAppTheme() {
-  return ThemeData(
+class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadeSlidePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.02, 0.015),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+}
+
+ThemeData _buildTheme(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  final scaffold = isDark ? const Color(0xFF0D0F12) : const Color(0xFFF8F7F3);
+  final surface = isDark ? const Color(0xFF171B20) : Colors.white;
+  final text = isDark ? Colors.white : const Color(0xFF181A1F);
+  final muted = isDark ? const Color(0xFF9EA3AE) : const Color(0xFF646B78);
+
+  final base = ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
-    primaryColor: AppTheme.primaryColor,
-    scaffoldBackgroundColor: AppTheme.primaryColor,
+    brightness: brightness,
+    scaffoldBackgroundColor: scaffold,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFFF6AA1C),
+      brightness: brightness,
+      primary: const Color(0xFFF6AA1C),
+      surface: surface,
+      error: const Color(0xFFE04545),
+    ),
+  );
+
+  final textTheme = GoogleFonts.nunitoSansTextTheme(base.textTheme).copyWith(
+    titleLarge: GoogleFonts.nunitoSans(
+      fontSize: 26,
+      fontWeight: FontWeight.w800,
+      color: text,
+      letterSpacing: -0.35,
+    ),
+    titleMedium: GoogleFonts.nunitoSans(
+      fontSize: 21,
+      fontWeight: FontWeight.w800,
+      color: text,
+    ),
+    bodyLarge: GoogleFonts.nunitoSans(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: text,
+    ),
+    bodyMedium: GoogleFonts.nunitoSans(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      color: muted,
+    ),
+    labelLarge: GoogleFonts.nunitoSans(
+      fontSize: 14,
+      fontWeight: FontWeight.w800,
+      color: text,
+    ),
+  );
+
+  return base.copyWith(
+    textTheme: textTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: AppTheme.darkGrey,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: AppTheme.titleMedium,
+      foregroundColor: text,
+      titleTextStyle: textTheme.titleMedium,
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: _FadeSlidePageTransitionsBuilder(),
+        TargetPlatform.iOS: _FadeSlidePageTransitionsBuilder(),
+        TargetPlatform.linux: _FadeSlidePageTransitionsBuilder(),
+        TargetPlatform.macOS: _FadeSlidePageTransitionsBuilder(),
+        TargetPlatform.windows: _FadeSlidePageTransitionsBuilder(),
+      },
+    ),
+    iconTheme: IconThemeData(
+      color: isDark ? Colors.white : const Color(0xFF22252B),
+      size: 22,
+    ),
+    cardTheme: CardThemeData(
+      color: surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      margin: EdgeInsets.zero,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppTheme.darkGrey,
+      fillColor: isDark ? const Color(0xFF1C2128) : const Color(0xFFF1F3F6),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF2A3039) : const Color(0xFFD7DDE5),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFF6AA1C), width: 2),
       ),
     ),
-    colorScheme: ColorScheme.dark(
-      primary: AppTheme.primaryColor,
-      secondary: AppTheme.accentColor,
-      error: AppTheme.errorColor,
-      surface: AppTheme.darkGrey,
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
   );
+}
+
+ThemeData getLightTheme() => _buildTheme(Brightness.light);
+
+ThemeData getDarkTheme() => _buildTheme(Brightness.dark);
+
+ThemeData getAppTheme() {
+  return getDarkTheme();
 }

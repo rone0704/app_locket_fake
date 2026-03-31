@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'chat_detail_screen.dart'; // <--- DÒNG QUAN TRỌNG NÀY ĐANG BỊ THIẾU
+import 'main_layout.dart';
+import 'chat_detail_screen.dart'; 
+import 'ui_button_tokens.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -14,14 +16,18 @@ class ChatListScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: TokenIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            size: 38,
+            // NÚT BACK CỦA CHAT GIỜ SẼ VỀ LẠI CAMERA (MAINLAYOUT)
+            onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const MainLayout()), (route) => false),
+          ),
         ),
         title: const Text("Trò chuyện", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        // 1. Lấy danh sách bạn bè từ Firestore
         stream: FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.amber));
@@ -33,16 +39,14 @@ class ChatListScreen extends StatelessWidget {
             return const Center(child: Text("Chưa có bạn bè nào để chat", style: TextStyle(color: Colors.white54)));
           }
 
-          // 2. Hiển thị danh sách
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 120), // ĐẨY LIST LÊN CAO CHO NAVI NẰM DƯỚI
             itemCount: friends.length,
             itemBuilder: (context, index) {
               String friendEmail = friends[index];
-              // Lấy tên từ email (ví dụ giang@gmail.com -> giang)
               String displayName = friendEmail.split('@')[0];
 
               return FutureBuilder<QuerySnapshot>(
-                // Tìm thông tin UID của bạn bè để lấy avatar và uid (cần để tạo phòng chat)
                 future: FirebaseFirestore.instance.collection('users').where('email', isEqualTo: friendEmail).limit(1).get(),
                 builder: (context, friendSnap) {
                   String? friendUid;
@@ -54,7 +58,7 @@ class ChatListScreen extends StatelessWidget {
                     avatarUrl = (doc.data() as Map<String, dynamic>)['avatarUrl'];
                   }
 
-                  return ListTile(
+                  return PressableScale(
                     onTap: () {
                       if (friendUid != null) {
                         Navigator.push(
@@ -69,16 +73,24 @@ class ChatListScreen extends StatelessWidget {
                         );
                       }
                     },
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey[800],
-                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl == null 
-                          ? Text(displayName[0].toUpperCase(), style: const TextStyle(color: Colors.white)) 
-                          : null,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.34),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.grey[800],
+                          backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                          child: avatarUrl == null ? Text(displayName[0].toUpperCase(), style: const TextStyle(color: Colors.white)) : null,
+                        ),
+                        title: Text(displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Bấm để nhắn tin", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        trailing: const TokenIconButton(icon: Icons.chat_bubble_outline_rounded, size: 34),
+                      ),
                     ),
-                    title: Text(displayName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: const Text("Bấm để nhắn tin", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    trailing: const Icon(Icons.chat_bubble, color: Colors.amber),
                   );
                 },
               );

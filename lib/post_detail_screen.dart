@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'image_url_utils.dart';
 
 class PostDetailScreen extends StatelessWidget {
   final String postId;
@@ -17,21 +18,21 @@ class PostDetailScreen extends StatelessWidget {
     String reactionValue = "${user.email}|$emoji";
 
     await FirebaseFirestore.instance.collection('posts').doc(postId).update({
-      'reactions': FieldValue.arrayUnion([reactionValue])
+      'reactions': FieldValue.arrayUnion([reactionValue]),
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Xử lý link ảnh giả lập (nếu có)
-    String imageUrl = data['imageUrl'];
-    if (!imageUrl.startsWith('http') || imageUrl.contains('picsum')) {
-      imageUrl = "https://picsum.photos/seed/$postId/400/600";
-    }
+    final String imageUrl = data['imageUrl']?.toString() ?? '';
+    final bool hasValidImage = isRenderableImageUrl(imageUrl);
+    final imageBytes = decodeDataImageUrl(imageUrl);
 
     // Xử lý tên author an toàn hơn (tránh lỗi nếu tên rỗng)
     String authorName = data['author'] ?? "Ẩn danh";
-    String firstLetter = (authorName.isNotEmpty) ? authorName[0].toUpperCase() : "A";
+    String firstLetter = (authorName.isNotEmpty)
+        ? authorName[0].toUpperCase()
+        : "A";
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -50,59 +51,102 @@ class PostDetailScreen extends StatelessWidget {
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Container(
-                // Lớp phủ đen mờ bên dưới để chữ dễ đọc
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black87],
-                    stops: [0.6, 1.0],
-                  ),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Avatar & Tên người đăng
-                    Row(
+              decoration: BoxDecoration(color: Colors.grey[900]),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (hasValidImage)
+                    (imageBytes != null
+                        ? Image.memory(imageBytes, fit: BoxFit.cover)
+                        : Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.grey[900],
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Colors.white38,
+                                    size: 48,
+                                  ),
+                                ),
+                          ))
+                  else
+                    const Center(
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.white38,
+                        size: 48,
+                      ),
+                    ),
+                  Container(
+                    // Lớp phủ đen mờ bên dưới để chữ dễ đọc
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black87],
+                        stops: [0.6, 1.0],
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.amber,
-                          radius: 15,
-                          child: Text(firstLetter, 
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 12)),
+                        // Avatar & Tên người đăng
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.amber,
+                              radius: 15,
+                              child: Text(
+                                firstLetter,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              authorName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(height: 5),
                         Text(
-                          authorName,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                          "Gửi lúc: ${_formatTimestamp(data['timestamp'])}",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
+                        // Hiển thị Caption nếu có
+                        if (data['caption'] != null &&
+                            data['caption'].isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Text(
+                              data['caption'],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "Gửi lúc: ${_formatTimestamp(data['timestamp'])}",
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    // Hiển thị Caption nếu có
-                    if (data['caption'] != null && data['caption'].isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Text(
-                          data['caption'],
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontStyle: FontStyle.italic),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -115,19 +159,27 @@ class PostDetailScreen extends StatelessWidget {
               children: [
                 // Hiển thị danh sách Reaction đã thả
                 StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance.collection('posts').doc(postId).snapshots(),
+                  stream: FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(postId)
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox();
-                    
-                    var postData = snapshot.data!.data() as Map<String, dynamic>?;
-                    List reactions = postData != null && postData.containsKey('reactions') 
-                        ? List.from(postData['reactions']) 
+
+                    var postData =
+                        snapshot.data!.data() as Map<String, dynamic>?;
+                    List reactions =
+                        postData != null && postData.containsKey('reactions')
+                        ? List.from(postData['reactions'])
                         : [];
 
                     if (reactions.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.only(bottom: 10),
-                        child: Text("Hãy là người đầu tiên thả tim!", style: TextStyle(color: Colors.grey)),
+                        child: Text(
+                          "Hãy là người đầu tiên thả tim!",
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       );
                     }
 
@@ -137,18 +189,24 @@ class PostDetailScreen extends StatelessWidget {
                         scrollDirection: Axis.horizontal,
                         itemCount: reactions.length,
                         itemBuilder: (context, index) {
-                          String reaction = reactions[index]; // Dạng: email|emoji
-                          String emoji = reaction.split('|').last; // Lấy phần emoji
+                          String reaction =
+                              reactions[index]; // Dạng: email|emoji
+                          String emoji = reaction
+                              .split('|')
+                              .last; // Lấy phần emoji
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
-                            child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                            child: Text(
+                              emoji,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                           );
                         },
                       ),
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 15),
 
                 // Thanh chọn Emoji

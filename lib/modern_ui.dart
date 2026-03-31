@@ -187,17 +187,13 @@ class _ModernTextFieldState extends State<ModernTextField> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _isFocused ? Colors.amber : Colors.grey.shade700,
-              width: _isFocused ? 2 : 1.5,
-            ),
             boxShadow: [
               if (_isFocused)
                 BoxShadow(
                   color: Colors.amber.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
             ],
           ),
           child: TextFormField(
@@ -212,22 +208,30 @@ class _ModernTextFieldState extends State<ModernTextField> {
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.grey.shade900,
-              border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
+                horizontal: 16,
                 vertical: 16,
               ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
               prefixIcon: widget.icon != null
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 12),
-                      child: Icon(
-                        widget.icon,
-                        color: _isFocused ? Colors.amber : Colors.white54,
-                        size: 20,
-                      ),
+                  ? Icon(
+                      widget.icon,
+                      color: _isFocused ? Colors.amber : Colors.white54,
+                      size: 20,
                     )
                   : null,
-              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+              prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 20),
               suffixIcon: widget.isPassword
                   ? GestureDetector(
                       onTap: () => setState(() => _obscureText = !_obscureText),
