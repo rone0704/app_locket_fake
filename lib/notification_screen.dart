@@ -1,156 +1,94 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'app_navigator.dart';
+import 'in_app_notifications.dart';
+import 'ui_widgets.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            'Vui lòng đăng nhập để xem thông báo',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
+    final notifications = NotificationsSystem(userId: user.uid);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text("Thông báo", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Thông báo",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         centerTitle: true,
-      ),
-      // Dùng ListView để có thể cuộn lên xuống nếu thông báo quá dài
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          const Text("Hôm nay", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          
-          // Thông báo 1: Có người thả tim ảnh
-          _buildNotificationItem(
-            name: "Bảo",
-            action: "đã thả ❤️ vào ảnh của bạn.",
-            time: "5 phút trước",
-            avatarColor: Colors.blueAccent,
-            hasImage: true, // Hiển thị cái ảnh nhỏ bên phải
-          ),
-          
-          // Thông báo 2: Có người đăng ảnh mới
-          _buildNotificationItem(
-            name: "Hải Yến",
-            action: "đã thêm một ảnh mới.",
-            time: "1 giờ trước",
-            avatarColor: Colors.pinkAccent,
-            hasImage: false,
-          ),
-          
-          const SizedBox(height: 20),
-          const Text("Tuần này", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          
-          // Thông báo 3: Lời mời kết bạn
-          _buildFriendRequestItem(
-            name: "Nam Tước",
-            time: "3 ngày trước",
-            avatarColor: Colors.green,
+        actions: [
+          TextButton(
+            onPressed: () => notifications.markAllAsRead(),
+            child: const Text('Đọc hết', style: TextStyle(color: Colors.amber)),
           ),
         ],
       ),
-    );
-  }
+      body: StreamBuilder<QuerySnapshot>(
+        stream: NotificationsSystem.getUserNotifications(user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.amber),
+            );
+          }
 
-  // --- HÀM TẠO KHUNG THÔNG BÁO BÌNH THƯỜNG ---
-  Widget _buildNotificationItem({required String name, required String action, required String time, required Color avatarColor, required bool hasImage}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Row(
-        children: [
-          // Avatar (Lấy chữ cái đầu của tên)
-          CircleAvatar(
-            radius: 24, 
-            backgroundColor: avatarColor, 
-            child: Text(name[0], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))
-          ),
-          const SizedBox(width: 12),
-          
-          // Nội dung thông báo
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
-                    children: [
-                      TextSpan(text: name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const TextSpan(text: " "),
-                      TextSpan(text: action),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(time, style: const TextStyle(color: Colors.white54, fontSize: 13)),
-              ],
-            ),
-          ),
-          
-          // Nếu thông báo về ảnh thì hiện cái ảnh thu nhỏ ở góc phải
-          if (hasImage)
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(8),
-                image: const DecorationImage(
-                  image: NetworkImage("https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=200&auto=format&fit=crop"),
-                  fit: BoxFit.cover,
-                ),
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) {
+            return Center(
+              child: EmptyState(
+                icon: Icons.notifications_none_rounded,
+                title: 'Chưa có thông báo',
+                subtitle: 'Khi bạn bè tương tác, thông báo sẽ hiện ở đây.',
+                actionLabel: 'Lam moi',
+                onAction: () {},
               ),
-            ),
-        ],
-      ),
-    );
-  }
+            );
+          }
 
-  // --- HÀM TẠO KHUNG THÔNG BÁO KẾT BẠN (CÓ NÚT CHẤP NHẬN) ---
-  Widget _buildFriendRequestItem({required String name, required String time, required Color avatarColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24, 
-            backgroundColor: avatarColor, 
-            child: Text(name[0], style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
-                    children: [
-                      TextSpan(text: name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const TextSpan(text: " đã gửi cho bạn một lời mời kết bạn."),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(time, style: const TextStyle(color: Colors.white54, fontSize: 13)),
-              ],
-            ),
-          ),
-          
-          // Nút Chấp nhận kết bạn
-          GestureDetector(
-            onTap: () {
-              // Bấm vào đây sau này xử lý add friend
+          return ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 12),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final notification = docs[index];
+              final data = notification.data() as Map<String, dynamic>?;
+              final postId = data?['relatedPostId']?.toString();
+
+              return NotificationItem(
+                notification: notification,
+                userId: user.uid,
+                onDelete: () =>
+                    notifications.deleteNotification(notification.id),
+                onTap: () {
+                  if (postId == null || postId.isEmpty) return;
+                  Navigator.pop(context);
+                  AppNavigator.openPostById(postId);
+                },
+              );
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(20)),
-              child: const Text("Chấp nhận", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

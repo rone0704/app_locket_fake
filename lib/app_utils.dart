@@ -54,6 +54,71 @@ class SafeContext {
 }
 
 // ==========================================
+// THEME-AWARE COLOR HELPER
+// ==========================================
+
+class ThemeColors {
+  static bool _isDarkMode(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
+
+  /// Primary text color (white in dark, dark gray in light)
+  static Color textPrimary(BuildContext context) {
+    return _isDarkMode(context) ? Colors.white : const Color(0xFF181A1F);
+  }
+
+  /// Secondary text color (light gray in dark, medium gray in light)
+  static Color textSecondary(BuildContext context) {
+    return _isDarkMode(context) ? Colors.white70 : const Color(0xFF555555);
+  }
+
+  /// Hint text color (extra light gray in dark, medium gray in light)
+  static Color textHint(BuildContext context) {
+    return _isDarkMode(context) ? Colors.white38 : const Color(0xFF999999);
+  }
+
+  /// Disabled/muted text (white54 in dark, lighter gray in light)
+  static Color textMuted(BuildContext context) {
+    return _isDarkMode(context) ? Colors.white54 : const Color(0xFFB0B0B0);
+  }
+
+  /// Background overlay (semi-transparent black)
+  static Color overlayDark(BuildContext context, [double alpha = 0.25]) {
+    return Colors.black.withValues(alpha: alpha);
+  }
+
+  /// Divider/border color (light gray in dark, lighter gray in light)
+  static Color divider(BuildContext context) {
+    return _isDarkMode(context) ? Colors.white12 : const Color(0xFFE5E5E5);
+  }
+
+  // TextStyle helpers that work with both light and dark themes
+  static TextStyle titleStyle(BuildContext context, {double fontSize = 20, FontWeight fontWeight = FontWeight.bold}) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: textPrimary(context),
+    );
+  }
+
+  static TextStyle bodyStyle(BuildContext context, {double fontSize = 14, FontWeight fontWeight = FontWeight.normal}) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: textPrimary(context),
+    );
+  }
+
+  static TextStyle labelStyle(BuildContext context, {double fontSize = 14, FontWeight fontWeight = FontWeight.w600}) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: textSecondary(context),
+    );
+  }
+}
+
+// ==========================================
 // FORM VALIDATORS
 // ==========================================
 

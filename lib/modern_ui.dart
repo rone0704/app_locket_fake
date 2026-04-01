@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 /// Modern Animated Button with Gradient
 class ModernGradientButton extends StatefulWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final List<Color> colors;
   final double height;
@@ -51,10 +51,10 @@ class _ModernGradientButtonState extends State<ModernGradientButton>
   }
 
   void _onPressed() {
-    if (!widget.isLoading) {
+    if (!widget.isLoading && widget.onPressed != null) {
+      widget.onPressed?.call();
       _controller.forward().then((_) {
         _controller.reverse();
-        widget.onPressed();
       });
     }
   }
@@ -65,7 +65,9 @@ class _ModernGradientButtonState extends State<ModernGradientButton>
       animation: _scaleAnimation,
       builder: (context, child) => Transform.scale(
         scale: _scaleAnimation.value,
-        child: Container(
+        child: Opacity(
+          opacity: widget.isLoading || widget.onPressed == null ? 0.72 : 1,
+          child: Container(
           height: widget.height,
           width: widget.width ?? double.infinity,
           decoration: BoxDecoration(
@@ -86,7 +88,7 @@ class _ModernGradientButtonState extends State<ModernGradientButton>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _onPressed,
+              onTap: widget.isLoading || widget.onPressed == null ? null : _onPressed,
               borderRadius: BorderRadius.circular(16),
               child: Center(
                 child: widget.isLoading
@@ -109,6 +111,7 @@ class _ModernGradientButtonState extends State<ModernGradientButton>
                       ),
               ),
             ),
+          ),
           ),
         ),
       ),
@@ -187,17 +190,13 @@ class _ModernTextFieldState extends State<ModernTextField> {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _isFocused ? Colors.amber : Colors.grey.shade700,
-              width: _isFocused ? 2 : 1.5,
-            ),
             boxShadow: [
               if (_isFocused)
                 BoxShadow(
                   color: Colors.amber.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
             ],
           ),
           child: TextFormField(
@@ -212,22 +211,30 @@ class _ModernTextFieldState extends State<ModernTextField> {
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.grey.shade900,
-              border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
+                horizontal: 16,
                 vertical: 16,
               ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade700, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Colors.amber, width: 2),
+              ),
               prefixIcon: widget.icon != null
-                  ? Padding(
-                      padding: const EdgeInsets.only(left: 16, right: 12),
-                      child: Icon(
-                        widget.icon,
-                        color: _isFocused ? Colors.amber : Colors.white54,
-                        size: 20,
-                      ),
+                  ? Icon(
+                      widget.icon,
+                      color: _isFocused ? Colors.amber : Colors.white54,
+                      size: 20,
                     )
                   : null,
-              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+              prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 20),
               suffixIcon: widget.isPassword
                   ? GestureDetector(
                       onTap: () => setState(() => _obscureText = !_obscureText),
@@ -255,19 +262,27 @@ class ModernHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData? icon;
+  final bool compact;
 
   const ModernHeader({
     super.key,
     required this.title,
     required this.subtitle,
     this.icon,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final verticalPadding = compact ? 20.0 : 32.0;
+    final iconPadding = compact ? 12.0 : 16.0;
+    final iconSize = compact ? 36.0 : 48.0;
+    final titleSize = compact ? 22.0 : 28.0;
+    final subtitleSize = compact ? 13.0 : 14.0;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      padding: EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [Colors.grey.shade900, Colors.grey.shade800],
@@ -291,14 +306,14 @@ class ModernHeader extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(iconPadding),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.amber.withValues(alpha: 0.2),
               ),
               child: Icon(
                 icon,
-                size: 48,
+                size: iconSize,
                 color: Colors.amber,
               ),
             ),
@@ -306,9 +321,9 @@ class ModernHeader extends StatelessWidget {
           ],
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: titleSize,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
@@ -318,7 +333,7 @@ class ModernHeader extends StatelessWidget {
             subtitle,
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 14,
+              fontSize: subtitleSize,
               letterSpacing: 0.3,
             ),
             textAlign: TextAlign.center,

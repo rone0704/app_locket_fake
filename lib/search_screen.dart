@@ -48,11 +48,16 @@ class _SearchScreenState extends State<SearchScreen> {
   // Hàm gửi lời mời
   Future<void> _sendRequest(String targetUid, String targetEmail) async {
     try {
+      final myEmail = currentUser?.email;
+      if (myEmail == null || myEmail.isEmpty) {
+        return;
+      }
+
       await FirebaseFirestore.instance.collection('users').doc(targetUid).update({
-        'friendRequests': FieldValue.arrayUnion([currentUser!.email])
+        'friendRequests': FieldValue.arrayUnion([myEmail])
       }).catchError((e) {
         FirebaseFirestore.instance.collection('users').doc(targetUid).set({
-          'friendRequests': [currentUser!.email]
+          'friendRequests': [myEmail]
         }, SetOptions(merge: true));
       });
       if (mounted) {
@@ -138,9 +143,14 @@ class _SearchScreenState extends State<SearchScreen> {
           itemCount: _searchResults.length,
           itemBuilder: (context, index) {
             var data = _searchResults[index].data() as Map<String, dynamic>;
-            String email = data['email'];
-            String name = data['displayName'] ?? email.split('@')[0];
-            String? avatarUrl = data['avatarUrl'];
+            final email = (data['email'] as String?)?.trim() ?? '';
+            final displayName = (data['displayName'] as String?)?.trim() ?? '';
+            final name = displayName.isNotEmpty
+                ? displayName
+                : (email.isNotEmpty ? email.split('@')[0] : 'Người dùng');
+            final String? avatarUrl = (data['avatarUrl'] as String?)?.trim().isEmpty ?? true
+                ? null
+                : (data['avatarUrl'] as String?)?.trim();
             String uid = _searchResults[index].id;
             
             // Check trạng thái
@@ -174,10 +184,18 @@ class _SearchScreenState extends State<SearchScreen> {
               leading: CircleAvatar(
                 backgroundColor: Colors.grey[800],
                 backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: const TextStyle(color: Colors.white),
+                      )
+                    : null,
               ),
               title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: Text(email, style: const TextStyle(color: Colors.white54)),
+              subtitle: Text(
+                email.isNotEmpty ? email : 'Không có email',
+                style: const TextStyle(color: Colors.white54),
+              ),
               trailing: trailingWidget,
             );
           },
@@ -209,10 +227,10 @@ class _SearchScreenState extends State<SearchScreen> {
             stream: FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).snapshots(),
             builder: (context, userSnapshot) {
               if (!userSnapshot.hasData) return const SizedBox();
-              
-              var myData = userSnapshot.data!.data() as Map<String, dynamic>;
-              List myFriends = myData['friends'] ?? [];
-              List myIncomingRequests = myData['friendRequests'] ?? []; // <--- QUAN TRỌNG: Lấy danh sách đang chờ duyệt
+
+              var myData = userSnapshot.data!.data() as Map<String, dynamic>?;
+              List myFriends = myData?['friends'] ?? [];
+              List myIncomingRequests = myData?['friendRequests'] ?? []; // <--- QUAN TRỌNG: Lấy danh sách đang chờ duyệt
               
               // Stream 2: Lấy danh sách User gợi ý
               return StreamBuilder<QuerySnapshot>(
@@ -226,12 +244,12 @@ class _SearchScreenState extends State<SearchScreen> {
                   // 3. KHÔNG NẰM TRONG DANH SÁCH ĐÃ GỬI LỜI MỜI CHO MÌNH (myIncomingRequests)
                   var docs = suggestionSnap.data!.docs.where((doc) {
                     var data = doc.data() as Map<String, dynamic>;
-                    String email = data['email'];
+                    final email = (data['email'] as String?)?.trim() ?? '';
                     bool isMe = doc.id == currentUser!.uid;
-                    bool isFriend = myFriends.contains(email);
-                    bool hasSentRequestToMe = myIncomingRequests.contains(email); // <--- Check lỗi logic cũ
+                    bool isFriend = email.isNotEmpty && myFriends.contains(email);
+                    bool hasSentRequestToMe = email.isNotEmpty && myIncomingRequests.contains(email); // <--- Check lỗi logic cũ
                     
-                    return !isMe && !isFriend && !hasSentRequestToMe;
+                    return !isMe && email.isNotEmpty && !isFriend && !hasSentRequestToMe;
                   }).toList();
 
                   if (docs.isEmpty) {
@@ -247,8 +265,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     itemCount: docs.length > 3 ? 3 : docs.length,
                     itemBuilder: (context, index) {
                       var data = docs[index].data() as Map<String, dynamic>;
-                      String name = data['displayName'] ?? data['email'].split('@')[0];
-                      String? avatarUrl = data['avatarUrl'];
+                      final email = (data['email'] as String?)?.trim() ?? '';
+                      final displayName = (data['displayName'] as String?)?.trim() ?? '';
+                      final name = displayName.isNotEmpty
+                        ? displayName
+                        : (email.isNotEmpty ? email.split('@')[0] : 'Người dùng');
+                      final String? avatarUrl = (data['avatarUrl'] as String?)?.trim().isEmpty ?? true
+                        ? null
+                        : (data['avatarUrl'] as String?)?.trim();
                       
                       List requestsReceived = data['friendRequests'] ?? [];
                       bool isSent = requestsReceived.contains(currentUser!.email);
@@ -258,14 +282,19 @@ class _SearchScreenState extends State<SearchScreen> {
                           radius: 22,
                           backgroundColor: Colors.grey[800],
                           backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                          child: avatarUrl == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)) : null,
+                          child: avatarUrl == null
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                  style: const TextStyle(color: Colors.white),
+                                )
+                              : null,
                         ),
                         title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         subtitle: const Text("Đã có trên Locket 💛", style: TextStyle(color: Colors.white54, fontSize: 12)),
                         trailing: isSent 
                           ? const Text("Đã gửi", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))
                           : ElevatedButton.icon(
-                              onPressed: () => _sendRequest(docs[index].id, data['email']),
+                              onPressed: () => _sendRequest(docs[index].id, email),
                               icon: const Icon(Icons.add, size: 18, color: Colors.black),
                               label: const Text("Thêm", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(

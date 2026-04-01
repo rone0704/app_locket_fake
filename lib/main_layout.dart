@@ -1,150 +1,190 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; 
-import 'calendar_screen.dart'; 
+import 'home_screen.dart';
 import 'settings_screen.dart';
-import 'explore_screen.dart';
-import 'saved_posts_system.dart';
+import 'calendar_screen.dart';
+import 'chat_list_screen.dart';
+import 'gallery_screen.dart';
+
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  final int initialTab;
+  final int initialHomeVerticalPage;
+  final String? initialPostId;
+
+  const MainLayout({
+    super.key,
+    this.initialTab = 1, // 0: Lịch, 1: Home(Camera/Feed), 2: Chat, 3: Gallery
+    this.initialHomeVerticalPage = 0, // 0: Camera, 1: Feed
+    this.initialPostId,
+  });
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  // Mặc định mở app lên là ở nút Giữa (số 1: Camera)
-  int _currentIndex = 1;
+  late int _currentIndex;
+  late int _homeVerticalPage;
+  late PageController _homePageController;
+  bool _isMainBarVisible = true;
 
-  // Danh sách 3 màn hình tương ứng với 3 nút
-  final List<Widget> _screens = [
-    const SettingsScreen(),
-    
-    const HomeScreen(), 
-    
-    // Tab 2 (Nút bên phải): Tôi đang gắn tạm cái Lịch vào đây nhé, ông có thể đổi sau
-    const CalendarScreen(), 
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab;
+    _homeVerticalPage = widget.initialHomeVerticalPage;
+    _homePageController = PageController(initialPage: _homeVerticalPage);
+  }
+
+  @override
+  void dispose() {
+    _homePageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    Widget currentScreen;
+    if (_currentIndex == 0) {
+      currentScreen = const CalendarScreen();
+    } else if (_currentIndex == 1) {
+      currentScreen = HomeScreen(
+        pageController: _homePageController,
+        initialPostId: widget.initialPostId,
+        onMainBarVisibilityChanged: (isVisible) {
+          if (!mounted || _isMainBarVisible == isVisible) return;
+          setState(() => _isMainBarVisible = isVisible);
+        },
+        onPageChanged: (page) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _homeVerticalPage != page) {
+              setState(() => _homeVerticalPage = page);
+            }
+          });
+        },
+        onGoToChat: () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _currentIndex = 2);
+          });
+        },
+        onGoToGallery: () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _currentIndex = 3);
+          });
+        },
+        onOpenSettings: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+        },
+      );
+    } else if (_currentIndex == 2) {
+      currentScreen = const ChatListScreen();
+    } else {
+      currentScreen = const GalleryScreen();
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBody: true, 
-      drawer: _buildDrawer(),
-      body: _screens[_currentIndex],
-      
-      bottomNavigationBar: _buildFloatingTaskbar(),
-    );
-  }
-
-  Widget _buildDrawer() {
-    return Drawer(
-      backgroundColor: Colors.grey[900],
-      child: Column(
+      body: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.2)),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Icon(Icons.menu_rounded, color: Colors.amber, size: 32),
-                SizedBox(height: 16),
-                Text(
-                  "Locket Clone",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+          IndexedStack(
+            index: _currentIndex,
+            children: [
+              const CalendarScreen(), // Index 0
+              
+              HomeScreen(             // Index 1
+                pageController: _homePageController,
+                initialPostId: widget.initialPostId,
+                onMainBarVisibilityChanged: (isVisible) {
+                  if (!mounted || _isMainBarVisible == isVisible) return;
+                  setState(() => _isMainBarVisible = isVisible);
+                },
+                onPageChanged: (page) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && _homeVerticalPage != page) {
+                      setState(() => _homeVerticalPage = page);
+                    }
+                  });
+                },
+                onGoToChat: () => setState(() => _currentIndex = 2),
+                onGoToGallery: () => setState(() => _currentIndex = 3),
+                onOpenSettings: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                },
+              ),
+              
+              const ChatListScreen(), // Index 2
+              const GalleryScreen(),  // Index 3
+            ],
+          ),
+          
+          if (!(_currentIndex == 1 && _homeVerticalPage == 0 && !_isMainBarVisible))
+            Positioned(
+              bottom: 30,
+              child: _buildFloatingTaskbar(),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.explore, color: Colors.amber),
-            title: const Text("Khám phá", style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ExploreScreen()),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.bookmark, color: Colors.amber),
-            title: const Text("Bài viết đã lưu", style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SavedPostsScreen()),
-              );
-            },
-          ),
-          const Spacer(),
-          const Divider(color: Colors.white24),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              "Phiên bản 1.0.0",
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ),
         ],
       ),
     );
   }
 
-// Hàm vẽ cái thanh "viên thuốc" lơ lửng
   Widget _buildFloatingTaskbar() {
-    return Padding(
-      // Ép lề cho nó lơ lửng cách đáy 30px, cách hai bên 80px
-      padding: const EdgeInsets.only(bottom: 30, left: 80, right: 80),
+    return SafeArea(
       child: Container(
-        height: 65,
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E), // Màu xám đen
-          borderRadius: BorderRadius.circular(40), // Bo tròn
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(32),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // --- NÚT BÊN TRÁI (Hướng dẫn Widget) ---
+            // 1. NÚT TRÁI (LỊCH)
             GestureDetector(
               onTap: () => setState(() => _currentIndex = 0),
               child: Icon(
-                Icons.settings_rounded,
-                color: _currentIndex == 0 ? Colors.white : Colors.grey,
-                size: 26,
+                Icons.calendar_month_rounded, 
+                color: _currentIndex == 0 ? Colors.white : Colors.white70, 
+                size: 28
               ),
             ),
+            const SizedBox(width: 25),
             
-            // --- NÚT Ở GIỮA (Home / Camera) ---
+            // 2. NÚT GIỮA (BIẾN HÌNH NGÔI NHÀ <-> CHỤP VÀNG)
             GestureDetector(
-              onTap: () => setState(() => _currentIndex = 1),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _currentIndex == 1 ? const Color(0xFF333333) : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.home_filled,
-                  color: _currentIndex == 1 ? Colors.white : Colors.grey,
-                  size: 28,
-                ),
-              ),
+              onTap: () {
+                if (_currentIndex != 1) {
+                  // LOGIC MỚI: Nếu đang ở Chat/Lịch/Gallery -> Chỉ chuyển về tab Home. 
+                  // Bộ nhớ IndexedStack sẽ tự động hiển thị lại đúng Camera hoặc Feed mà bạn đang xem dở!
+                  setState(() => _currentIndex = 1);
+                } else if (_homeVerticalPage == 1) {
+                  // Đang ở ngay trang Home và đang lướt Feed -> Cuộn ngược lên Camera
+                  _homePageController.animateToPage(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+                }
+              },
+              child: (_currentIndex == 1 && _homeVerticalPage == 0)
+                  // Đang ở Camera -> Hiện Ngôi Nhà
+                  ? Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.15)),
+                      child: const Center(child: Icon(Icons.home_filled, color: Colors.white, size: 28)),
+                    )
+                  // Đang ở tab khác hoặc đang ở Feed -> Hiện Nút Chụp Vàng
+                  : Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.amber, width: 3.5), color: Colors.transparent),
+                      child: Center(child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle))),
+                    ),
             ),
+            const SizedBox(width: 25),
             
-            // --- NÚT BÊN PHẢI (Lịch sử) ---
+            // 3. NÚT PHẢI (CHAT)
             GestureDetector(
               onTap: () => setState(() => _currentIndex = 2),
               child: Icon(
-                Icons.calendar_month_rounded, // <-- Đổi thành Icon Lịch
-                color: _currentIndex == 2 ? Colors.white : Colors.grey,
-                size: 26,
+                Icons.chat_bubble_rounded, 
+                color: _currentIndex == 2 ? Colors.white : Colors.white70, 
+                size: 28
               ),
             ),
           ],

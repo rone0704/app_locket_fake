@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_payload.dart';
 
 // ==========================================
 // PUSH NOTIFICATIONS SYSTEM
@@ -13,26 +14,38 @@ class NotificationsSystem {
   // Gửi notification đên bạn bè
   Future<void> sendNotification({
     required String recipientId,
-    required String type, // 'like', 'comment', 'friendRequest', 'message'
+    required String
+    type, // 'like', 'comment', 'friendRequest', 'message', 'newPost'
     required String title,
     required String body,
     String? relatedPostId,
     String? relatedUserId,
   }) async {
+    final pushData = relatedPostId != null && relatedUserId != null
+        ? NotificationPayload.forNewPost(
+            postId: relatedPostId,
+            senderUid: relatedUserId,
+          )
+        : <String, dynamic>{};
+
     await FirebaseFirestore.instance
         .collection('users')
         .doc(recipientId)
         .collection('notifications')
         .add({
-      'type': type,
-      'title': title,
-      'body': body,
-      'fromUserId': userId,
-      'relatedPostId': relatedPostId,
-      'relatedUserId': relatedUserId,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-    });
+          'type': type,
+          'title': title,
+          'body': body,
+          'fromUserId': userId,
+          'relatedPostId': relatedPostId,
+          'relatedUserId': relatedUserId,
+          'deepLink': relatedPostId != null
+              ? NotificationPayload.deepLinkForPost(relatedPostId)
+              : null,
+          'pushData': pushData,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
   }
 
   // Lấy notifications
@@ -193,6 +206,10 @@ class NotificationItem extends StatelessWidget {
         notifIcon = Icons.chat;
         notifColor = Colors.amber;
         break;
+      case 'newPost':
+        notifIcon = Icons.photo_camera;
+        notifColor = Colors.purpleAccent;
+        break;
       default:
         notifIcon = Icons.notifications;
         notifColor = Colors.white54;
@@ -201,8 +218,7 @@ class NotificationItem extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         if (!isRead) {
-          await NotificationsSystem(userId: userId)
-              .markAsRead(notification.id);
+          await NotificationsSystem(userId: userId).markAsRead(notification.id);
         }
         onTap?.call();
       },
@@ -243,20 +259,14 @@ class NotificationItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     data['body'] ?? '',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     timeString,
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                 ],
               ),

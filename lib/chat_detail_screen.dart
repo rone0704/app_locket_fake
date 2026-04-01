@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'ui_button_tokens.dart';
+import 'app_utils.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String friendUid;
@@ -55,12 +57,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () => Navigator.pop(context)),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: TokenIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            size: 38,
+            onTap: () => Navigator.pop(context),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.friendName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(widget.friendEmail, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            Text(widget.friendName, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(widget.friendEmail, style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
           ],
         ),
       ),
@@ -110,7 +119,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                                   border: Border.all(color: Colors.white24, width: 1)
                                 ),
                               ),
-                            Text(msg['text'] ?? "", style: TextStyle(color: isMe ? Colors.black : Colors.white, fontSize: 16)),
+                            Text(msg['text'] ?? "", style: TextStyle(color: isMe ? Colors.black : ThemeColors.textPrimary(context), fontSize: 16)),
                           ],
                         ),
                       ),
@@ -123,7 +132,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: EdgeInsets.fromLTRB(
+                10,
+                10,
+                10,
+                MediaQuery.of(context).padding.bottom + 10,
+              ),
               color: Colors.grey[900],
               child: Row(
                 children: [
@@ -133,17 +147,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: "Nhắn tin...",
-                        hintStyle: const TextStyle(color: Colors.white54),
+                        hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
                         filled: true, fillColor: Colors.black,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
+                  const SizedBox(width: 12),
+                  PressableScale(
                     onTap: _sendMessage,
-                    child: Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.amber), child: const Icon(Icons.send, color: Colors.black, size: 20)),
+                    child: Container(
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.amber,
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.send,
+                        color: Colors.black,
+                        size: 22,
+                      ),
+                    ),
                   )
                 ],
               ),

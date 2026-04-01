@@ -30,16 +30,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 # Thư viện quản lý Camera
   camera: ^0.10.5+9
   firebase_core: ^3.10.1
   firebase_auth: ^5.4.1
   cloud_firestore: ^5.6.2
   firebase_storage: ^12.4.1
+  firebase_messaging: ^15.2.4
+  http: ^1.2.2
+  image: ^4.2.0
+  google_fonts: ^6.2.1
   image_picker: ^1.0.7
   # Thư viện quản lý đường dẫn file
   path_provider: ^2.1.2
   path: ^1.9.0
+  # Thư viện để lưu trữ cài đặt ứng dụng
+  shared_preferences: ^2.2.2
+  google_sign_in: ^6.3.0
+  local_auth: ^2.3.0
+  flutter_secure_storage: ^9.2.2
   # Thư viện để xử lý widget sau này (cài trước luôn)
   home_widget: ^0.3.0
   # The following adds the Cupertino Icons font to your application.
